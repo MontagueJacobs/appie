@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to My Website</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">MyWebsite</div>
+            <ul class="nav-links">
+                <li><a href="#home" data-i18n="nav.home">Home</a></li>
+                <li><a href="#about" data-i18n="nav.about">About</a></li>
+                <li><a href="#services" data-i18n="nav.services">Services</a></li>
+                <li><a href="#purchase-history" data-i18n="nav.purchaseHistory">Purchase History</a></li>
+                <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+                <li>
+                    <button id="language-toggle" class="language-toggle" onclick="toggleLanguage()">
+                        <span id="current-lang">🇬🇧 EN</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>Welcome to My Website</h1>
+                <p>Your journey starts here</p>
+                <button class="cta-button">Get Started</button>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="container">
+                <h2>About Us</h2>
+                <p>We are dedicated to providing excellent service and creating amazing experiences for our visitors.</p>
+            </div>
+        </section>
+
+        <section id="services" class="services">
+            <div class="container">
+                <h2>Our Services</h2>
+                <div class="service-grid">
+                    <div class="service-card">
+                        <h3>Service One</h3>
+                        <p>Description of your first service offering.</p>
+                    </div>
+                    <div class="service-card">
+                        <h3>Service Two</h3>
+                        <p>Description of your second service offering.</p>
+                    </div>
+                    <div class="service-card">
+                        <h3>Service Three</h3>
+                        <p>Description of your third service offering.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="purchase-history" class="purchase-history">
+            <div class="container">
+                <h2>Your Albert Heijn Purchase History</h2>
+                
+                <!-- Login Section -->
+                <div id="login-section" class="login-container">
+                    <p data-i18n="login.title">Sign in with your Albert Heijn account to see your purchase history.</p>
+                    <div class="login-steps">
+                        <div class="step">
+                            <span class="step-number">1</span>
+                            <p data-i18n="login.step1">Click the button below to open Albert Heijn login in a new tab</p>
+                            <button id="open-auth-btn" class="cta-button" data-i18n="login.loginButton">Login with Albert Heijn</button>
+                        </div>
+                        <div class="step">
+                            <span class="step-number">2</span>
+                            <div class="linux-notice">
+                                <strong data-i18n="login.step2AfterLogin">📝 After logging in:</strong>
+                                <ul>
+                                    <li><strong data-i18n="login.lookAtUrl">Look at the URL bar or popup</strong> - You'll see something like:<br>
+                                    <code>appie://login-exit?code=YOUR_CODE_HERE</code></li>
+                                    <li><strong data-i18n="login.copyCode">Copy just the code part</strong> (everything after <code>code=</code>)</li>
+                                    <li><strong>Linux users:</strong> <span data-i18n="login.linuxUsers">If you see a popup saying "No Apps Available", don't close it yet!</span> 
+                                    You can usually select and copy the URL text from the popup message or the address bar behind it.</li>
+                                </ul>
+                            </div>
+                            <p style="margin-top: 1rem;" data-i18n="login.pasteCode">Then paste the code or full URL below:</p>
+                            <form id="login-form" class="code-form">
+                                <input type="text" id="auth-url" data-i18n-placeholder="login.placeholder" placeholder="Paste code or full URL here" autofocus>
+                                <button type="submit" data-i18n="login.completeLogin">Complete Login</button>
+                            </form>
+                            <div class="auto-paste-section">
+                                <p class="or-divider" data-i18n="login.orAutoDetect">OR try automatic clipboard detection:</p>
+                                <button id="auto-detect-btn" class="cta-button secondary" type="button">
+                                    <span id="btn-text" data-i18n="login.autoDetect">📋 Auto-Detect from Clipboard</span>
+                                </button>
+                                <p class="hint" data-i18n="login.hint">First copy the URL/code, then click this button</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipts Section -->
+                <div id="receipts-section" class="receipts-container" style="display: none;">
+                    <div class="receipts-header">
+                        <h3>Your Receipts</h3>
+                        <button id="logout-btn" class="logout-button">Logout</button>
+                    </div>
+                    <div id="receipts-list"></div>
+                    <div id="receipt-detail" class="receipt-detail" style="display: none;">
+                        <button id="back-to-list" class="back-button">← Back to receipts</button>
+                        <div id="receipt-content"></div>
+                    </div>
+                </div>
+
+                <!-- Loading & Error Messages -->
+                <div id="success-message" class="message success" style="display: none;"></div>
+                <div id="loading-message" class="message" style="display: none;">Loading...</div>
+                <div id="error-message" class="message error" style="display: none;"></div>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <div class="container">
+                <h2>Get In Touch</h2>
+                <p>We'd love to hear from you!</p>
+                <form class="contact-form">
+                    <input type="text" placeholder="Your Name" required>
+                    <input type="email" placeholder="Your Email" required>
+                    <textarea placeholder="Your Message" rows="5" required></textarea>
+                    <button type="submit">Send Message</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 MyWebsite. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

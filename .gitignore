@@ -1,0 +1,13 @@
+# Python virtual environment
+heijn/
+__pycache__/
+*.pyc
+
+# Sensitive data - contains user authentication tokens
+.tokens.json
+
+# Secret key for session encryption
+.secret_key
+
+# OS files
+.DS_Store
