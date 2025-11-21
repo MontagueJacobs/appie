@@ -696,7 +696,7 @@ document.getElementById('back-to-list')?.addEventListener('click', function() {
     }, 100);
 });
 
-function PriceDifference({ productPrice, comparePrice, receiptIndicator, searchQuery }) {
+function PriceDifference({ productPrice, comparePrice, receiptIndicator, searchQuery, expand }) {
     // Returns an object { score, expand } where expand=true suggests
     // the caller may want to broaden the search if no good matches.
     let score = 0;
@@ -706,11 +706,12 @@ function PriceDifference({ productPrice, comparePrice, receiptIndicator, searchQ
 
     if (receiptIndicator && receiptIndicator.toUpperCase().includes('BONUS')) {
         // Tiered scoring for bonus items (lenient)
-        if (priceDiff < 0.01) score += 100;
-        else if (priceDiff < 0.20) score += 80;
-        else if (priceDiff < 0.30) score += 50;
-        else if (priceDiff < 0.50) score += 20;
-        else score += 5; // Not close
+        if (priceDiff < 0.10) score += 500;
+        else if (priceDiff < 0.20) score += 400;
+        else if (priceDiff < 0.30) score += 300;
+        else if (priceDiff < 0.50) score += 200;
+        else if (priceDiff >0.50 && expand) return {score: score+=400, expand:true}; //logic works??
+        else return { score, expand: true }; // Not close, must expand
         return { score, expand: false };
     }
 
@@ -720,16 +721,8 @@ function PriceDifference({ productPrice, comparePrice, receiptIndicator, searchQ
         return { score, expand: false };
     }
 
-    // Small mismatch -> small penalty and suggest expansion; large mismatch -> larger penalty
-    if (priceDiff < 0.20) {
-        score -= 20;
-        if (searchQuery) console.warn(`PriceDifference: small mismatch for "${searchQuery}" (diff=${priceDiff.toFixed(2)}), suggesting expansion`);
-        return { score, expand: true };
-    }
-
-    score -= 100;
-    if (searchQuery) console.warn(`PriceDifference: large mismatch for "${searchQuery}" (diff=${priceDiff.toFixed(2)}), suggesting expansion`);
-    return { score, expand: true };
+    // mismatch, must expand search
+    else return {score, expand: true };
 }
 
 // Enrich products with images and details from product search API
@@ -753,7 +746,7 @@ async function enrichProductsWithDetails(products) {
     const receiptDescription = product.description;
     // Indicator (e.g. 'BONUS') — prefer using receipt item indicator when present
     const receiptIndicator = (product.indicator || '').toString();
-        
+    const expand=false;   
         try {
             // Clean up the product description for better search results
             // Keep the 'AH' prefix if present; the store prefixes AH to indicate AH-brand items
@@ -816,7 +809,9 @@ async function enrichProductsWithDetails(products) {
             if (data.products && data.products.length > 0) {
                 
                 // Scoring function: combines price, quantity, name, and description matching
-                const scoreProduct = (apiProduct) => {
+                // pdScore is passed in from outside so we can also capture the `expand` flag
+                // returned by PriceDifference when we map candidates.
+                const scoreProduct = (apiProduct, score) => {
                     const title = apiProduct.title.toLowerCase();
                     const brand = (apiProduct.brand || '').toLowerCase();
                     const searchLower = searchQuery.toLowerCase();
@@ -842,9 +837,6 @@ async function enrichProductsWithDetails(products) {
                     const productPrice = apiProduct.currentPrice ?? apiProduct.priceBeforeBonus ?? null;
                     // Use unit price for comparison when quantity > 1
                     const comparePrice = receiptUnitPrice != null ? receiptUnitPrice : receiptPrice;
-                    // PriceDifference returns {score, expand}
-                    const pd = PriceDifference({ productPrice, comparePrice, receiptIndicator, searchQuery });
-                    let score = pd.score;
                           // 2. Sales unit matches quantity (50 points)
                           // (pack-size matching code is currently commented out)
                     
@@ -889,20 +881,31 @@ async function enrichProductsWithDetails(products) {
                     return score;
                 };
                 
-                    // Score all products and find the best match
-                    let scoredProducts = candidates.map(p => ({
-                        product: p,
-                        score: scoreProduct(p)
-                    }));
+                    // Score all products and find the best match. Call PriceDifference
+                    // once per candidate and retain its `expand` suggestion so we can
+                    // trigger expanded searches later if any candidate asks for it.
+                    const comparePrice = receiptUnitPrice != null ? receiptUnitPrice : receiptPrice;
+                    let scoredProducts = candidates.map(p => {
+                        const productPrice = p.currentPrice ?? p.priceBeforeBonus ?? null;
+                        const pd = PriceDifference({ productPrice, comparePrice, receiptIndicator, searchQuery });
+                        const sc = scoreProduct(p, pd.score);
+                        return { product: p, score: sc, expand: !!pd.expand };
+                    });
+
+                    // If any candidate suggested expansion (via PriceDifference.expand),
+                    // allow the fallback-expansion logic to run even if the top score
+                    // isn't strictly negative.
+                    const shouldExpand = scoredProducts.some(s => s.expand === true);
                 
                 // Sort by score (highest first)
                 scoredProducts.sort((a, b) => b.score - a.score);
                 
                 let bestMatch = scoredProducts[0];
                 let productInfo = null;
-                
-                // If the top candidate score is negative, try a fallback: expand category synonyms (e.g. "pasta" -> "tortelloni, ravioli")
-                if (bestMatch && bestMatch.score < 0 && searchQuery) {
+
+                // If the top candidate score is negative OR PriceDifference suggested expansion,
+                // try a fallback: expand category synonyms (e.g. "pasta" -> "tortelloni, ravioli")
+                if (bestMatch && (bestMatch.score < 0 || shouldExpand) && searchQuery) {
                     // Simple category synonyms map — add more as we iterate
                     const categorySynonyms = {
                         'pasta': ['tortelloni', 'ravioli', 'lasagne', 'penne', 'spaghetti', 'tagliatelle'],
@@ -924,12 +927,15 @@ async function enrichProductsWithDetails(products) {
                                     // merge by webshopId if available, else by title
                                     const existingKeys = new Set(scoredProducts.map(sp => sp.product.webshopId || sp.product.title));
                                     for (const ep of extraProducts) {
-                                        const k = ep.webshopId || ep.title;
-                                        if (!existingKeys.has(k)) {
-                                            scoredProducts.push({ product: ep, score: scoreProduct(ep) });
-                                            existingKeys.add(k);
+                                            const k = ep.webshopId || ep.title;
+                                            if (!existingKeys.has(k)) {
+                                                const epPrice = ep.currentPrice ?? ep.priceBeforeBonus ?? null;
+                                                const epPd = PriceDifference({ productPrice: epPrice, comparePrice, receiptIndicator, searchQuery });
+                                                const epScore = scoreProduct(ep, epPd.score);
+                                                scoredProducts.push({ product: ep, score: epScore, expand: !!epPd.expand });
+                                                existingKeys.add(k);
+                                            }
                                         }
-                                    }
                                 }
                             } catch (err) {
                                 console.warn('Fallback synonym search failed for', key, err);
@@ -971,12 +977,15 @@ async function enrichProductsWithDetails(products) {
                                     const extra = await resp.json();
                                     const extraProducts = extra.products || [];
                                     for (const ep of extraProducts) {
-                                        const k = ep.webshopId || ep.title;
-                                        if (!existingKeys.has(k)) {
-                                            scoredProducts.push({ product: ep, score: scoreProduct(ep) });
-                                            existingKeys.add(k);
+                                            const k = ep.webshopId || ep.title;
+                                            if (!existingKeys.has(k)) {
+                                                const epPrice = ep.currentPrice ?? ep.priceBeforeBonus ?? null;
+                                                const epPd = PriceDifference({ productPrice: epPrice, comparePrice, receiptIndicator, searchQuery });
+                                                const epScore = scoreProduct(ep, epPd.score);
+                                                scoredProducts.push({ product: ep, score: epScore, expand: !!epPd.expand });
+                                                existingKeys.add(k);
+                                            }
                                         }
-                                    }
                                 }
                             } catch (err) {
                                 console.warn('Broader fallback search failed for', key, err);
