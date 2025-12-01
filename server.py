@@ -18,6 +18,7 @@ app = FastAPI()
 AH_BASE = "https://api.ah.nl"
 AH_USER_AGENT = "Appie/8.22.3"
 AH_CLIENT_ID = "appie"
+import os
 
 TOKENS_PATH = Path("appie!/ah_tokens.json")
 DEVICE_ID_COOKIE = "ah_device_id"
@@ -285,10 +286,14 @@ async def api_token_status(request: Request):
 
 @app.get("/api/authorize-url")
 async def api_authorize_url(request: Request):
-    # Use current host to build an HTTPS web callback so mobile browsers don't deep-link to the AH app
+    # Determine redirect_uri: prefer env REDIRECT_URI, else derive from host, else legacy custom scheme
+    env_redirect = os.environ.get("REDIRECT_URI")
     host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
     scheme = "https"  # Vercel serves over HTTPS
-    callback = f"{scheme}://{host}/login-callback"
+    derived = f"{scheme}://{host}/login-callback" if host else None
+    # Fallback to legacy mobile scheme if neither env nor host is available
+    fallback = "appie://login-exit"
+    callback = env_redirect or derived or fallback
     url = (
         "https://login.ah.nl/secure/oauth/authorize"
         "?client_id=appie"
