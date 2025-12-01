@@ -9,5 +9,8 @@ __pycache__/
 # Secret key for session encryption
 .secret_key
 
+# Ephemeral device fingerprint (generated locally, not for source control)
+device_id.txt
+
 # OS files
 .DS_Store
