@@ -1,360 +1,361 @@
-import os
-import sys
-import secrets
+# ...existing imports...
 import json
-from typing import Dict
-import requests
-from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse, Response
+import time
+from pathlib import Path
+import httpx
+from typing import Optional, Dict
+import asyncio
+import uuid
+from uuid import uuid4
+from fastapi import FastAPI, HTTPException, Form
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware
 
-# Import the AH client from the appie! folder
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "appie!", "webapp"))
-from ah_client import AHClient, AHClientError
+app = FastAPI()
 
-# Config
-BASE_DIR = os.path.dirname(__file__)
-TOKENS_FILE = os.path.join(BASE_DIR, ".tokens.json")
-SECRET_FILE = os.path.join(BASE_DIR, ".secret_key")
+# ...existing code...
 
-# Generate or load persistent secret key
-def _get_or_create_secret():
-    if os.path.exists(SECRET_FILE):
-        with open(SECRET_FILE, 'r') as f:
-            return f.read().strip()
+AH_BASE = "https://api.ah.nl"
+AH_USER_AGENT = "Appie/8.22.3"
+AH_CLIENT_ID = "appie"
+
+TOKENS_PATH = Path("appie!/ah_tokens.json")
+DEVICE_ID_PATH = Path("device_id.txt")
+if DEVICE_ID_PATH.exists():
+    DEVICE_ID = DEVICE_ID_PATH.read_text().strip()
+else:
+    DEVICE_ID = str(uuid4())
+    DEVICE_ID_PATH.write_text(DEVICE_ID)
+
+
+def load_tokens() -> Optional[Dict]:
+    if not TOKENS_PATH.exists():
+        return None
+    with TOKENS_PATH.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+
+
+def save_tokens(tokens: Dict) -> None:
+    # Preserve user flag if present; normalize shape + store created_at (epoch)
+    user_flag = tokens.get("user", False)
+    normalized = {
+        "access_token": tokens["access_token"],
+        "refresh_token": tokens.get("refresh_token"),
+        "expires_in": tokens.get("expires_in", 0),
+        "created_at": time.time(),
+    }
+    if user_flag:
+        normalized["user"] = True
+    TOKENS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with TOKENS_PATH.open("w", encoding="utf-8") as f:
+        json.dump(normalized, f)
+
+
+def token_is_expired(tokens: Dict, skew: int = 60) -> bool:
+    created_at = tokens.get("created_at", 0)
+    expires_in = tokens.get("expires_in", 0)
+    return (created_at + expires_in - skew) <= time.time()
+
+
+async def refresh_token_if_needed() -> str:
+    tokens = load_tokens()
+    if not tokens:
+        raise HTTPException(status_code=401, detail="Not logged in (no tokens)")
+
+    if not token_is_expired(tokens):
+        return tokens["access_token"]
+
+    refresh_token = tokens.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token; please log in again")
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(
+            f"{AH_BASE}/mobile-auth/v1/auth/token/refresh",
+            json={"clientId": AH_CLIENT_ID, "refreshToken": refresh_token},
+            headers={
+                "User-Agent": AH_USER_AGENT,
+                "Content-Type": "application/json",
+            },
+        )
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Failed to refresh token: {resp.status_code} {resp.text}",
+        )
+
+    new_tokens = resp.json()
+    # Inherit user flag from previous tokens if it existed
+    if tokens.get("user"):
+        new_tokens["user"] = True
+    save_tokens(new_tokens)
+    return new_tokens["access_token"]
+
+
+async def exchange_code_for_token(code: str) -> Dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(
+            f"{AH_BASE}/mobile-auth/v1/auth/token",
+            json={"clientId": AH_CLIENT_ID, "code": code},
+            headers={
+                "User-Agent": AH_USER_AGENT,
+                "Content-Type": "application/json",
+            },
+        )
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to exchange code for token: {resp.status_code} {resp.text}",
+        )
+    tokens = resp.json()
+    tokens["user"] = True  # mark this token as user-authenticated (OAuth code flow)
+    save_tokens(tokens)
+    return tokens
+
+
+@app.post("/api/login")
+async def api_login(code: str = Form(...)):
+    tokens = await exchange_code_for_token(code)
+    return {"status": "ok", "expires_in": tokens.get("expires_in", 0)}
+
+
+@app.post("/api/logout")
+async def api_logout():
+    if TOKENS_PATH.exists():
+        TOKENS_PATH.unlink()
+    return {"status": "ok"}
+
+
+def classify_token(tokens: Optional[Dict]) -> Dict:
+    if not tokens:
+        return {"logged_in": False, "present": False}
+    created_at = tokens.get("created_at", 0)
+    expires_in = tokens.get("expires_in", 0)
+    remaining = int(created_at + expires_in - time.time()) if created_at and expires_in else None
+    access = tokens.get("access_token", "")
+    refresh = tokens.get("refresh_token")
+    # Determine token type:
+    # Priority 1: explicit user flag
+    if tokens.get("user"):
+        token_type = "user"
     else:
-        secret = secrets.token_hex(32)
-        with open(SECRET_FILE, 'w') as f:
-            f.write(secret)
-        return secret
+        # Priority 2: heuristic — presence of refresh token and reasonable lengths => user
+        if refresh and len(refresh) >= 20 and len(access) >= 20:
+            token_type = "user"
+        else:
+            token_type = "anonymous"
+    return {
+        "logged_in": True,
+        "present": True,
+        "token_type": token_type,
+        "expires_in": expires_in,
+        "seconds_remaining": max(0, remaining) if remaining is not None else None,
+        "token_expired": token_is_expired(tokens),
+    }
 
-APP_SECRET = _get_or_create_secret()
+@app.get("/api/status")
+async def api_status():
+    return classify_token(load_tokens())
 
-app = FastAPI(title="Albert Heijn Purchase History")
+@app.get("/api/token/status")
+async def api_token_status():
+    return classify_token(load_tokens())
 
-# Add SessionMiddleware with longer session timeout (7 days)
-app.add_middleware(
-    SessionMiddleware, 
-    secret_key=APP_SECRET, 
-    https_only=False,
-    max_age=7 * 24 * 60 * 60  # 7 days in seconds
-)
 
-# Persistent token storage
-SESSION_TOKENS: Dict[str, Dict] = {}
+@app.get("/api/authorize-url")
+async def api_authorize_url():
+    # matches the gist / your frontend expectations
+    url = (
+        "https://login.ah.nl/secure/oauth/authorize"
+        "?client_id=appie"
+        "&redirect_uri=appie://login-exit"
+        "&response_type=code"
+    )
+    # Frontend expects 'authorize_url'; keep backward compatibility exposing both keys.
+    return {"authorize_url": url, "url": url}
 
-def _load_tokens():
-    """Load tokens from disk on startup"""
-    global SESSION_TOKENS
-    if os.path.exists(TOKENS_FILE):
-        try:
-            with open(TOKENS_FILE, 'r') as f:
-                SESSION_TOKENS = json.load(f)
-            print(f"Loaded {len(SESSION_TOKENS)} sessions from disk")
-        except Exception as e:
-            print(f"Failed to load tokens: {e}")
-            SESSION_TOKENS = {}
-    else:
-        SESSION_TOKENS = {}
 
-def _save_tokens():
-    """Save tokens to disk"""
+async def ah_get(path: str, params: Optional[Dict] = None) -> httpx.Response:
+    access_token = await refresh_token_if_needed()
+    # Emulate more mobile headers for gateway routing; adjust values as needed.
+    base_headers = {
+        "User-Agent": f"{AH_USER_AGENT} (Android; 14; Sandbox)",
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json",
+        "Accept-Language": "nl-NL,nl;q=0.8,en-US;q=0.6,en;q=0.4",
+        "Accept-Encoding": "gzip, deflate",
+        "X-App-Version": AH_USER_AGENT.split("/")[-1],  # 8.22.3
+        "X-App-Build": AH_USER_AGENT.split("/")[-1].replace(".", ""),  # 8223 approximate build
+        "X-App-Name": "ah",
+        "X-Channel": "mobile",
+        "X-Client-Id": AH_CLIENT_ID,
+        "X-Device-Platform": "android",
+        "X-Device-Type": "phone",
+        "X-OS-Version": "14",
+        "X-Device-Id": DEVICE_ID,
+        "X-Device-Model": "Pixel 7 Sandbox",
+        "X-Network-Type": "wifi",
+        "X-Platform": "android",
+    }
+
+    # Retry & fallback logic: try path as-is; if still 503 service_unreachable, attempt v2 variant.
+    attempts = 3
+    last_resp = None
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for attempt in range(attempts):
+            correlation_id = str(uuid.uuid4())
+            headers = {**base_headers, "X-Correlation-ID": correlation_id}
+            last_resp = await client.get(f"{AH_BASE}{path}", params=params, headers=headers)
+            if last_resp.status_code != 503:
+                return last_resp
+            # backoff before retry
+            await asyncio.sleep(0.5 * (2 ** attempt))
+
+        # If still 503 and initial path is v1, try v2 variant once.
+        if path == "/mobile-services/v1/receipts":
+            alt_path = "/mobile-services/v2/receipts"
+            correlation_id = str(uuid.uuid4())
+            headers = {**base_headers, "X-Correlation-ID": correlation_id}
+            alt_resp = await client.get(f"{AH_BASE}{alt_path}", params=params, headers=headers)
+            # Return alt_resp regardless; caller will decide.
+            return alt_resp
+
+    return last_resp
+
+
+@app.get("/api/receipts")
+async def api_receipts():
+    # Gather detailed attempts (primary + fallback) for structured diagnostics.
+    attempts_meta = []
+    path_primary = "/mobile-services/v1/receipts"
+    resp = await ah_get(path_primary)
+    attempts_meta.append({"path": path_primary, "status_code": resp.status_code})
+    # If primary yielded 503 and we auto-fallback to v2 inside ah_get, we already returned alt resp; record alt if different.
+    if path_primary == "/mobile-services/v1/receipts" and resp.status_code == 503:
+        # Run explicit second attempt to collect meta (even if ah_get already tried internally)
+        alt_path = "/mobile-services/v2/receipts"
+        alt_resp = await ah_get(alt_path)
+        attempts_meta.append({"path": alt_path, "status_code": alt_resp.status_code})
+        resp = alt_resp
+
+    if resp.status_code == 200:
+        data = resp.json()
+        return JSONResponse({"ok": True, "attempts": attempts_meta, "receipts": data})
+
+    # Parse upstream body for error details.
+    upstream_body = resp.text
+    parsed = None
+    err_code = None
+    err_desc = None
     try:
-        with open(TOKENS_FILE, 'w') as f:
-            json.dump(SESSION_TOKENS, f)
-    except Exception as e:
-        print(f"Failed to save tokens: {e}")
+        parsed = resp.json()
+        err_code = parsed.get("error")
+        err_desc = parsed.get("error_description")
+    except Exception:
+        pass
 
-# Load tokens on startup
-_load_tokens()
+    structured = {
+        "ok": False,
+        "upstream_status": resp.status_code,
+        "attempts": attempts_meta,
+        "error_code": err_code,
+        "error_description": err_desc,
+        "body_snippet": upstream_body[:400] if upstream_body else None,
+    }
 
+    if err_code == "service_unreachable":
+        return JSONResponse(structured, status_code=503)
+    return JSONResponse(structured, status_code=400)
 
-def _get_session_id(request: Request) -> str:
-    """Get or create session ID"""
-    if "session_id" not in request.session:
-        request.session["session_id"] = secrets.token_hex(16)
-    return request.session["session_id"]
-
-
-def _get_client_for_session(session_id: str) -> AHClient:
-    tokens = SESSION_TOKENS.get(session_id)
-    client = AHClient(tokens)
-    
-    # Auto-refresh tokens if they're expired or about to expire
-    if client.has_tokens() and client.is_expired():
+@app.get("/api/receipts/debug")
+async def api_receipts_debug():
+    """Attempt multiple possible receipt endpoints and return a diagnostic report.
+    Helps troubleshoot upstream 503 service_unreachable by showing each attempt's status and truncated body.
+    """
+    candidates = [
+        "/mobile-services/v1/receipts",
+        "/mobile-services/v2/receipts",
+        "/mobile-services/receipts/v1/receipts",  # speculative legacy
+    ]
+    results = []
+    for path in candidates:
+        resp = await ah_get(path)
+        body_snippet = resp.text[:400] if resp.text else ""
+        # Try JSON parse
+        parsed = None
         try:
-            client.refresh()
-            SESSION_TOKENS[session_id] = client.tokens
-            _save_tokens()
-            print(f"Refreshed tokens for session {session_id[:8]}...")
-        except Exception as e:
-            print(f"Token refresh failed: {e}")
-            # Token refresh failed, user will need to login again
+            parsed = resp.json()
+        except Exception:
             pass
-    
-    return client
+        results.append({
+            "path": path,
+            "status_code": resp.status_code,
+            "ok": resp.status_code == 200,
+            "headers": dict(resp.headers),
+            "json_keys": list(parsed.keys()) if isinstance(parsed, dict) else None,
+            "body_snippet": body_snippet,
+        })
+        # Stop early if one succeeded
+        if resp.status_code == 200:
+            break
+    return JSONResponse({"diagnostics": results})
 
 
-def _save_client_tokens(session_id: str, client: AHClient) -> None:
-    SESSION_TOKENS[session_id] = client.tokens
-    _save_tokens()
+@app.get("/api/receipts/{transaction_id}")
+async def api_receipt_detail(transaction_id: str):
+    resp = await ah_get(f"/mobile-services/v2/receipts/{transaction_id}")
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Receipt detail fetch failed: {resp.status_code} {resp.text}",
+        )
+    return JSONResponse(resp.json())
 
 
-# Serve the main HTML page
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    with open(os.path.join(BASE_DIR, "index.html"), "r") as f:
-        return HTMLResponse(content=f.read())
+@app.get("/api/products/search")
+async def api_products_search(query: str):
+    resp = await ah_get(
+        "/mobile-services/product/search/v2",
+        params={"query": query, "sortOn": "RELEVANCE"},
+    )
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Product search failed: {resp.status_code} {resp.text}",
+        )
+    return JSONResponse(resp.json())
 
 
-# Serve static files
-@app.get("/styles.css")
-async def styles():
-    return FileResponse(os.path.join(BASE_DIR, "styles.css"))
-
+# Root route: serve index.html if present, otherwise a simple health message.
+@app.get("/")
+async def root():
+    index_path = Path("index.html")
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    return HTMLResponse("<h1>Appie backend running</h1>")
 
 @app.get("/script.js")
-async def script():
-    return FileResponse(os.path.join(BASE_DIR, "script.js"))
+async def serve_script():
+    js_path = Path("script.js")
+    if not js_path.exists():
+        raise HTTPException(status_code=404, detail="script.js not found")
+    return FileResponse(str(js_path), media_type="text/javascript")
+
+@app.get("/styles.css")
+async def serve_styles():
+    css_path = Path("styles.css")
+    if not css_path.exists():
+        raise HTTPException(status_code=404, detail="styles.css not found")
+    return FileResponse(str(css_path), media_type="text/css")
 
 
-# API: Check login status
-@app.get("/api/status")
-async def check_status(request: Request):
-    session_id = _get_session_id(request)
-    client = _get_client_for_session(session_id)
-    return {"logged_in": client.has_tokens()}
-
-
-# API: Get authorization URL
-@app.get("/api/authorize-url")
-async def authorize_url():
-    # AH only accepts appie:// redirect, but we'll handle it with a helper page
-    url = (
-        "https://login.ah.nl/secure/oauth/authorize?client_id=appie&"
-        "redirect_uri=appie://login-exit&response_type=code"
-    )
-    return {"authorize_url": url}
-
-
-# API: Exchange code for token
-@app.post("/api/login")
-async def login_with_code(request: Request, code: str = Form(...)):
-    session_id = _get_session_id(request)
-    client = _get_client_for_session(session_id)
-    try:
-        client.exchange_code(code.strip())
-        _save_client_tokens(session_id, client)
-        return {"success": True, "message": "Login successful"}
-    except AHClientError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-# API: Get receipts
-@app.get("/api/receipts")
-async def get_receipts(request: Request):
-    session_id = _get_session_id(request)
-    client = _get_client_for_session(session_id)
-    if not client.has_tokens():
-        raise HTTPException(status_code=401, detail="Not logged in")
-    try:
-        receipts = client.list_receipts()
-        _save_client_tokens(session_id, client)
-        return {"receipts": receipts}
-    except AHClientError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-# API: Get specific receipt
-@app.get("/api/receipts/{transaction_id}")
-async def get_receipt_detail(request: Request, transaction_id: str):
-    session_id = _get_session_id(request)
-    client = _get_client_for_session(session_id)
-    if not client.has_tokens():
-        raise HTTPException(status_code=401, detail="Not logged in")
-    try:
-        data = client.get_receipt(transaction_id)
-        _save_client_tokens(session_id, client)
-        
-        # Debug: Log a sample product to see what fields are available
-        if data.get('receiptUiItems'):
-            product_items = [item for item in data['receiptUiItems'] if item.get('type') == 'product' and item.get('description')]
-            if product_items:
-                print(f"Sample product item keys: {list(product_items[0].keys())}")
-                print(f"Sample product: {product_items[0]}")
-        
-        return data
-    except AHClientError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-# API: Search for product information
-@app.get("/api/products/search")
-async def search_products(request: Request, query: str):
-    """Search for products using anonymous auth (product search doesn't require user login)"""
-    try:
-        # Use anonymous token for product search
-        # First, try to get or create an anonymous token
-        anonymous_token = None
-        
-        # Try to get anonymous token
-        token_url = "https://api.ah.nl/mobile-auth/v1/auth/token/anonymous"
-        token_payload = {"clientId": "appie"}
-        token_headers = {
-            "User-Agent": "Appie/8.22.3",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
-        
-        token_resp = requests.post(token_url, json=token_payload, headers=token_headers, timeout=10)
-        if token_resp.ok:
-            anonymous_token = token_resp.json().get('access_token')
-        
-        if not anonymous_token:
-            print("Failed to get anonymous token")
-            return {"products": [], "page": {"totalElements": 0}}
-        
-        # Now search for products
-        url = "https://api.ah.nl/mobile-services/product/search/v2"
-        headers = {
-            "User-Agent": "Appie/8.22.3",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {anonymous_token}",
-            "x-application": "AHWEBSHOP"
-        }
-        params = {
-            "query": query,
-            "application": "AHWEBSHOP",
-            "availableOnline": "true",
-            "bonus": "NONE",
-            "orderable": "any",
-            "sortBy": "RELEVANCE",
-            "page": 0,
-            "size": 10  # Increased from 5 to 10 for better scoring options
-        }
-        
-        r = requests.get(url, headers=headers, params=params, timeout=20)
-        print(f"Search request URL: {r.url}")
-        if not r.ok:
-            print(f"Product search error: {r.status_code} - {r.text[:400]}")
-            return {"products": [], "page": {"totalElements": 0}}
-        
-        result = r.json()
-        product_count = len(result.get('products', []))
-        print(f"Search for '{query}': found {product_count} products")
-        if product_count > 0:
-            # Log the first few products for debugging
-            for i, p in enumerate(result.get('products', [])[:3]):
-                print(f"  [{i}] {p.get('brand', 'N/A')} - {p.get('title', 'N/A')}")
-        return result
-    
-    except Exception as e:
-        print(f"Product search exception: {str(e)}")
-        return {"products": [], "page": {"totalElements": 0}}
-
-
-# API: Proxy product images to avoid CORS issues
-@app.get("/api/products/image")
-async def proxy_product_image(request: Request):
-    """Proxy product images through our server to avoid CORS issues"""
-    # Get the raw query string to handle URLs with their own query parameters
-    query_string = request.url.query
-    
-    # Extract url parameter - everything after 'url='
-    if not query_string or not query_string.startswith('url='):
-        raise HTTPException(status_code=400, detail="URL parameter is required")
-    
-    # Everything after 'url=' is the image URL (including its own query params)
-    import urllib.parse
-    image_url = urllib.parse.unquote(query_string[4:])  # Skip 'url=' and decode
-    
-    try:
-        print(f"Proxying image: {image_url[:100]}...")
-        headers = {
-            "User-Agent": "Appie/8.22.3",
-            "Accept": "image/*"
-        }
-        r = requests.get(image_url, headers=headers, timeout=10)
-        if not r.ok:
-            print(f"Image fetch failed: {r.status_code}")
-            raise HTTPException(status_code=404, detail="Image not found")
-        
-        # Determine content type
-        content_type = r.headers.get('content-type', 'image/jpeg')
-        
-        from fastapi.responses import Response
-        return Response(content=r.content, media_type=content_type)
-    except requests.RequestException as e:
-        print(f"Image proxy error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        print(f"Unexpected image proxy error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# API: Get detailed product information including nutrition
-@app.get("/api/products/{webshop_id}")
-async def get_product_detail(webshop_id: int):
-    """
-    Fetch detailed product information including nutritional data
-    """
-    try:
-        # Get anonymous token first
-        token_url = "https://api.ah.nl/mobile-auth/v1/auth/token/anonymous"
-        token_payload = {"clientId": "appie"}
-        token_headers = {
-            "User-Agent": "Appie/8.22.3",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
-        
-        token_resp = requests.post(token_url, json=token_payload, headers=token_headers, timeout=10)
-        if not token_resp.ok:
-            print(f"Failed to get anonymous token: {token_resp.status_code}")
-            return {"error": "Authentication failed"}
-        
-        anonymous_token = token_resp.json().get('access_token')
-        
-        # Fetch product details
-        url = f"https://api.ah.nl/mobile-services/product/detail/v4/fir/{webshop_id}"
-        headers = {
-            "User-Agent": "Appie/8.22.3",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {anonymous_token}",
-            "x-application": "AHWEBSHOP"
-        }
-        
-        r = requests.get(url, headers=headers, timeout=20)
-        print(f"Product detail request for webshopId {webshop_id}: {r.status_code}")
-        
-        if not r.ok:
-            print(f"Product detail error: {r.status_code} - {r.text[:400]}")
-            return {"error": f"Failed to fetch product details: {r.status_code}"}
-        
-        result = r.json()
-        print(f"Product detail fetched successfully for {webshop_id}")
-        
-        # Log if nutrition info is present
-        if 'nutritions' in result or 'nutritionalTable' in result or 'nutritionalInformation' in result:
-            print(f"  ✓ Nutrition data found in response")
-        
-        return result
-    
-    except Exception as e:
-        print(f"Product detail exception: {str(e)}")
-        return {"error": str(e)}
-
-
-# API: Logout
-@app.post("/api/logout")
-async def logout(request: Request):
-    session_id = _get_session_id(request)
-    SESSION_TOKENS.pop(session_id, None)
-    request.session.clear()
-    return {"success": True, "message": "Logged out"}
+# Optional: mount static files (CSS/JS/images) if you want direct access without the root handler.
+# Commented out for now to avoid shadowing API routes.
+# app.mount("/static", StaticFiles(directory="."), name="static")
 
 
 if __name__ == "__main__":
+    # Running via: python3 server.py
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
