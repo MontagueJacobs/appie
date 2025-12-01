@@ -284,16 +284,18 @@ async def api_token_status(request: Request):
 
 
 @app.get("/api/authorize-url")
-async def api_authorize_url():
-    # matches the gist / your frontend expectations
+async def api_authorize_url(request: Request):
+    # Use current host to build an HTTPS web callback so mobile browsers don't deep-link to the AH app
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    scheme = "https"  # Vercel serves over HTTPS
+    callback = f"{scheme}://{host}/login-callback"
     url = (
         "https://login.ah.nl/secure/oauth/authorize"
         "?client_id=appie"
-        "&redirect_uri=appie://login-exit"
+        f"&redirect_uri={callback}"
         "&response_type=code"
     )
-    # Frontend expects 'authorize_url'; keep backward compatibility exposing both keys.
-    return {"authorize_url": url, "url": url}
+    return {"authorize_url": url, "url": url, "redirect_uri": callback}
 
 
 async def ah_get(path: str, params: Optional[Dict] = None, request: Optional[Request] = None) -> httpx.Response:
@@ -458,6 +460,43 @@ async def root():
     if index_path.exists():
         return FileResponse(str(index_path))
     return HTMLResponse("<h1>Appie backend running</h1>")
+
+# Minimal callback page: exchanges ?code= via backend and then redirects to home.
+@app.get("/login-callback")
+async def login_callback_page():
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset=\"utf-8\"><title>Completing login…</title></head>
+        <body>
+        <script>
+        (async () => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const code = params.get('code');
+                if (!code) {
+                    document.body.innerHTML = '<p>Missing code parameter.</p>';
+                    return;
+                }
+                const fd = new FormData();
+                fd.append('code', code);
+                const resp = await fetch('/api/login', { method: 'POST', body: fd });
+                if (resp.ok) {
+                    // Go back to main page
+                    window.location.replace('/');
+                } else {
+                    const err = await resp.text();
+                    document.body.innerHTML = '<pre>' + err.substring(0, 500) + '</pre>';
+                }
+            } catch (e) {
+                document.body.innerHTML = '<pre>' + (e && e.toString ? e.toString() : 'Login failed') + '</pre>';
+            }
+        })();
+        </script>
+        </body>
+        </html>
+        """
+        return HTMLResponse(html)
 
 @app.get("/script.js")
 async def serve_script():
