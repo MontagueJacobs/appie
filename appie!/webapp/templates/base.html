@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AH Receipts Viewer</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>AH Receipts Viewer</h1>
+      <nav>
+        <a href="/">Home</a>
+        {% if logged_in %}
+          <a href="/logout">Logout</a>
+        {% else %}
+          <a href="/login">Login</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main>
+      {% if error %}
+      <div class="flash error">{{ error }}</div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+      <small>Unofficial viewer. For personal use only.</small>
+    </footer>
+  </body>
+</html>

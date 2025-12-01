@@ -1,0 +1,17 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; margin: 0; color: #222; }
+header { background: #0aa; color: #fff; padding: 12px 16px; display:flex; align-items:center; justify-content:space-between; }
+header h1 { margin:0; font-size: 20px; }
+nav a { color: #fff; margin-left: 12px; text-decoration: none; }
+main { padding: 16px; }
+.button, button { background: #0aa; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+.button:hover, button:hover { filter: brightness(0.95); }
+input[type=text] { width: 100%; max-width: 480px; padding: 8px; margin: 8px 0; }
+label { display:block; margin-top: 8px; }
+.flash.error { background: #fee; color: #900; padding: 8px 12px; border: 1px solid #fbb; border-radius: 4px; }
+.receipts { width: 100%; border-collapse: collapse; }
+.receipts th, .receipts td { border-bottom: 1px solid #eee; padding: 6px 8px; text-align: left; }
+.receipt .line { display:flex; justify-content: space-between; padding: 4px 0; }
+.receipt .line.total { font-weight: 700; }
+pre { background: #f6f8fa; padding: 12px; overflow: auto; }
+footer { padding: 16px; color: #666; font-size: 12px; }

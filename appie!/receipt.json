@@ -1,0 +1,239 @@
+{
+  "receiptUiItems": [
+    {
+      "type": "ah-logo",
+      "style": "AH"
+    },
+    {
+      "type": "text",
+      "value": "Albert Heijn REMOVED",
+      "alignment": "CENTER",
+      "isBold": false
+    },
+    {
+      "type": "text",
+      "value": "REMOVED",
+      "alignment": "CENTER",
+      "isBold": false
+    },
+    {
+      "type": "text",
+      "value": "Tel: REMOVED",
+      "alignment": "CENTER",
+      "isBold": false
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "products-header"
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "product",
+      "description": "BONUSKAART",
+      "amount": "REMOVED"
+    },
+    {
+      "type": "product",
+      "quantity": "1",
+      "description": "REMOVED REGULAR",
+      "amount": "1,00",
+      "indicator": ""
+    },
+    {
+      "type": "product",
+      "quantity": "1",
+      "description": "REMOVED BONUS PRODUCT",
+      "amount": "0,35",
+      "indicator": "B"
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "subtotal",
+      "quantity": "1",
+      "text": "SUBTOTAAL",
+      "amount": "1,35"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "product",
+      "quantity": "BONUS",
+      "description": "REMOVED BONUS PRODUCT",
+      "amount": "-0,12"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "total",
+      "label": "UW VOORDEEL",
+      "price": "0,12"
+    },
+    {
+      "type": "product",
+      "description": "Waarvan"
+    },
+    {
+      "type": "product",
+      "description": "BONUS BOX",
+      "amount": "0,00"
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "total",
+      "label": "TOTAAL",
+      "price": "1,23"
+    },
+    {
+      "type": "text",
+      "value": "SPAARACTIES:",
+      "alignment": "LEFT",
+      "isBold": true
+    },
+    {
+      "type": "product",
+      "quantity": "123",
+      "description": "eSPAARZEGELS"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "text",
+      "value": "BETAALD MET:",
+      "alignment": "LEFT",
+      "isBold": false
+    },
+    {
+      "type": "product",
+      "description": "PINNEN",
+      "amount": "1,23"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "four-text-column",
+      "first": "POI: REMOVED",
+      "third": ""
+    },
+    {
+      "type": "four-text-column",
+      "first": "CLIENT TICKET",
+      "third": "Terminal",
+      "fourth": "REMOVED"
+    },
+    {
+      "type": "four-text-column",
+      "first": "Merchant",
+      "second": "1",
+      "third": "Period",
+      "fourth": "1"
+    },
+    {
+      "type": "four-text-column",
+      "first": "Transaction",
+      "second": "REMOVED",
+      "third": "MAESTRO"
+    },
+    {
+      "type": "four-text-column",
+      "first": "(REMOVED)",
+      "third": "MAESTRO"
+    },
+    {
+      "type": "four-text-column",
+      "first": "Card",
+      "second": "REMOVED",
+      "third": "Card sequence number",
+      "fourth": "0"
+    },
+    {
+      "type": "four-text-column",
+      "first": "PAYMENT",
+      "third": "Date",
+      "fourth": "01/01/1970 00:00"
+    },
+    {
+      "type": "four-text-column",
+      "first": "Authorization code",
+      "second": "CODE MATCHED ON YOUR BANK STATEMENT",
+      "third": "Total",
+      "fourth": "1,23 EUR"
+    },
+    {
+      "type": "four-text-column",
+      "first": "Contactless",
+      "third": "Read Method CHIP"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "vat",
+      "left": "BTW",
+      "center": "OVER",
+      "right": "EUR"
+    },
+    {
+      "type": "vat",
+      "left": "9%",
+      "center": "1,23",
+      "right": "0,12"
+    },
+    {
+      "type": "vat",
+      "left": "TOTAAL",
+      "center": "1,23",
+      "right": "0,12"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "tech-info",
+      "store": 1,
+      "lane": 1,
+      "transaction": 1,
+      "dateTime": "1970-01-01T00:00:00Z"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "text",
+      "value": "",
+      "alignment": "CENTER",
+      "isBold": false
+    },
+    {
+      "type": "text",
+      "value": "",
+      "alignment": "CENTER",
+      "isBold": false
+    },
+    {
+      "type": "text",
+      "value": "",
+      "alignment": "CENTER",
+      "isBold": false
+    },
+    {
+      "type": "spacer"
+    }
+  ],
+  "storeId": 1,
+  "transactionMoment": "1970-01-01T00:00:00Z"
+}

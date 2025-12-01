@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+  <section>
+    <h2>Receipt</h2>
+    {% if data.receiptUiItems %}
+      <div class="receipt">
+        {% for item in data.receiptUiItems %}
+          {% if item.type == 'product' %}
+            <div class="line product">
+              <span class="qty">{{ item.quantity or '' }}</span>
+              <span class="desc">{{ item.description or '' }}</span>
+              <span class="amount">{{ item.amount or '' }}</span>
+            </div>
+          {% elif item.type in ['subtotal','total'] %}
+            <div class="line total">
+              <span class="desc">{{ item.text or item.label }}</span>
+              <span class="amount">{{ item.amount or item.price }}</span>
+            </div>
+          {% elif item.type == 'divider' %}
+            <hr />
+          {% elif item.type == 'text' %}
+            <div class="text">{{ item.value }}</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <pre>{{ data | tojson(indent=2) }}</pre>
+    {% endif %}
+
+    <p><a href="/">Back</a></p>
+  </section>
+{% endblock %}

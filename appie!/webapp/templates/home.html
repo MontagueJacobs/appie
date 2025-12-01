@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+  {% if not logged_in %}
+    <section>
+      <h2>Welcome</h2>
+      <p>Sign in with your Albert Heijn account to see your purchase history.</p>
+      <p><a class="button" href="/login">Login</a></p>
+    </section>
+  {% else %}
+    <section>
+      <h2>Your receipts</h2>
+      {% if receipts and receipts|length > 0 %}
+        <table class="receipts">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Total (€)</th>
+              <th>Discount (€)</th>
+              <th>Transaction ID</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in receipts %}
+            <tr>
+              <td>{{ r.transactionMoment }}</td>
+              <td>{{ r.total.amount.amount }}</td>
+              <td>{{ r.totalDiscount.amount }}</td>
+              <td><a href="/receipts/{{ r.transactionId }}">{{ r.transactionId }}</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No receipts found.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

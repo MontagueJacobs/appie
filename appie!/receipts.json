@@ -1,0 +1,16 @@
+[
+  {
+    "transactionId": "TRANSACTIONID",
+    "transactionMoment": "1970-01-0T00:0:00Z",
+    "total": {
+      "amount": {
+        "amount": 1.23,
+        "currency": "EUR"
+      }
+    },
+    "totalDiscount": {
+      "amount": 0.12,
+      "currency": "EUR"
+    }
+  }
+]

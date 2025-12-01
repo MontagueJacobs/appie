@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+  <section>
+    <h2>Login</h2>
+    <p>
+      Due to AH's mobile OAuth flow, the easiest way is to log in in your own browser and paste back the authorization code.
+    </p>
+    <ol>
+      <li>Open the authorize link below in a new tab.</li>
+      <li>Log in with your AH credentials.</li>
+      <li>After login, the browser will try to open <code>appie://</code> and fail; copy the value of <code>code=...</code> from the address bar or error page.</li>
+      <li>Paste the code here to finish login.</li>
+    </ol>
+    <p>
+      <a class="button" target="_blank" rel="noopener" href="https://login.ah.nl/secure/oauth/authorize?client_id=appie&redirect_uri=appie://login-exit&response_type=code">
+        Open AH Login
+      </a>
+    </p>
+
+    <form method="post" action="/login/code">
+      <label>Authorization code</label>
+      <input type="text" name="code" placeholder="Paste code here" required />
+      <button type="submit">Sign in</button>
+    </form>
+
+    <p class="note">We don't store your password. Tokens are kept in memory for your session.</p>
+  </section>
+{% endblock %}

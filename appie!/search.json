@@ -1,0 +1,849 @@
+{
+  "page": {
+    "size": 30,
+    "totalElements": 180,
+    "totalPages": 6,
+    "number": 0
+  },
+  "products": [
+    {
+      "webshopId": 132597,
+      "hqId": 788626,
+      "title": "Lipton Ice tea green",
+      "salesUnitSize": "1,5 l",
+      "unitPriceDescription": "normale prijs per liter €1.77",
+      "images": [
+        {
+          "width": 48,
+          "height": 48,
+          "url": "https://static.ah.nl/dam/product/AHI_43545239383733303439?revLabel=1&rendition=48x48_GIF&fileType=binary"
+        },
+        {
+          "width": 80,
+          "height": 80,
+          "url": "https://static.ah.nl/dam/product/AHI_43545239383733303439?revLabel=1&rendition=80x80_JPG&fileType=binary"
+        },
+        {
+          "width": 708,
+          "height": 708,
+          "url": "https://static.ah.nl/dam/product/AHI_43545239383733303439?revLabel=1&rendition=LowRes_JPG&fileType=binary"
+        },
+        {
+          "width": 200,
+          "height": 200,
+          "url": "https://static.ah.nl/dam/product/AHI_43545239383733303439?revLabel=1&rendition=200x200_JPG_Q85&fileType=binary"
+        },
+        {
+          "width": 400,
+          "height": 400,
+          "url": "https://static.ah.nl/dam/product/AHI_43545239383733303439?revLabel=1&rendition=400x400_JPG_Q85&fileType=binary"
+        },
+        {
+          "width": 800,
+          "height": 800,
+          "url": "https://static.ah.nl/dam/product/AHI_43545239383733303439?revLabel=1&rendition=800x800_JPG_Q90&fileType=binary"
+        }
+      ],
+      "bonusStartDate": "2022-08-15",
+      "bonusEndDate": "2022-08-28",
+      "discountType": "AHOO",
+      "segmentType": "AHOO",
+      "promotionType": "AHONLINE",
+      "bonusMechanism": "KEUZEDEAL 10% KORTING",
+      "currentPrice": 2.38,
+      "priceBeforeBonus": 2.65,
+      "orderAvailabilityStatus": "IN_ASSORTMENT",
+      "mainCategory": "Frisdrank, sappen, koffie, thee",
+      "subCategory": "Ice tea koolzuurvrij (pakken)",
+      "brand": "Lipton",
+      "shopType": "AH",
+      "availableOnline": true,
+      "isPreviouslyBought": false,
+      "descriptionHighlights": "<p>Fris en licht, laag in suiker met Lipton ice tea green original.</p><p><ul><li>Fris en licht, laag in suiker met Lipton ice tea green original</li><li>Heerlijk verfrissende, koolzuurvrije ijsthee, laag in suiker</li><li>Deze frisdrank is het lekkerst om ijskoud en samen met vrienden te drinken</li><li>Alle Lipton ice tea is 100% rainforest alliance gecertificeerd</li></ul></p>",
+      "propertyIcons": [
+        "vegan"
+      ],
+      "nix18": false,
+      "isStapelBonus": false,
+      "extraDescriptions": [
+        "Alleen geldig voor online bestellingen.",
+        "10% korting op deze Keuze Deal."
+      ],
+      "bonusSegmentId": -13879,
+      "bonusSegmentDescription": "Ola, Lipton & Lay's",
+      "isBonus": true,
+      "hasListPrice": false,
+      "descriptionFull": "Lipton ice tea green original is een heerlijk verfrissende drank met de lichte smaak van groene thee: dat heb je soms gewoon even nodig! De groene ijsthee is koolzuurvrij. Lipton ice tea green is laag in suiker en daardoor de perfecte verfrissing voor tussendoor. Het maken van Lipton ice tea begint natuurlijk bij de thee. De green variant is gemaakt op basis van groene thee-extracten. Fris en licht, laag in suiker met Lipton ice tea green. Lipton gebruikt 100% rainforest alliance gecertificeerde thee. Dit houdt in dat alle thee die wij gebruiken, afkomstig is van theeplantages waar wordt gewerkt met oog voor mens  en  milieu. Vanaf 2020 zijn alle 1,5 liter pakken van Lipton gemaakt van volledig recyclebaar materiaal. Onze pakken zijn namelijk ingekocht van 95% plantaardig materiaal en 5% gecertificeerd aluminium op basis van mass balance. Hiermee dragen wij bij aan de vermindering van de co2 uitstoot. Gooi deze verpakking inclusief de dop op de juiste Manier weg! Al meer dan 25 jaar zorgt Lipton ice tea voor verfrissing op de meest gezellige plekken van Nederland: op een zonnig terrasje, een zomers festival of gewoon bij jou thuis in de woonkamer.",
+      "isOrderable": true,
+      "isInfiniteBonus": false,
+      "isSample": false,
+      "isBonusPrice": true,
+      "isSponsored": false,
+      "isVirtualBundle": false,
+      "productCount": 14,
+      "multipleItemPromotion": true
+    }
+  ],
+  "links": {
+    "first": {
+      "href": "https://ms.ah.nl:8080/mobile-services/product/search/v2?application=AHWEBSHOP&availableOnline=true&bonus=NONE&orderable=any&query=QUERY&sortBy=RELEVANCE&page=0&size=30"
+    },
+    "current": {
+      "href": "https://ms.ah.nl:8080/mobile-services/product/search/v2?application=AHWEBSHOP&availableOnline=true&bonus=NONE&orderable=any&query=QUERY&sortBy=RELEVANCE&page=0&size=30"
+    },
+    "next": {
+      "href": "https://ms.ah.nl:8080/mobile-services/product/search/v2?application=AHWEBSHOP&availableOnline=true&bonus=NONE&orderable=any&query=QUERY&sortBy=RELEVANCE&page=1&size=30"
+    },
+    "last": {
+      "href": "https://ms.ah.nl:8080/mobile-services/product/search/v2?application=AHWEBSHOP&availableOnline=true&bonus=NONE&orderable=any&query=QUERY&sortBy=RELEVANCE&page=5&size=30"
+    }
+  },
+  "filters": [
+    {
+      "id": "brand",
+      "label": "Merk",
+      "options": [
+        {
+          "id": "AH",
+          "label": "AH",
+          "count": 18,
+          "display": true
+        },
+        {
+          "id": "AH Excellent",
+          "label": "AH Excellent",
+          "count": 5,
+          "display": true
+        },
+        {
+          "id": "Ambi Pur",
+          "label": "Ambi Pur",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Arizona",
+          "label": "Arizona",
+          "count": 13,
+          "display": true
+        },
+        {
+          "id": "Batu",
+          "label": "Batu",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "Bozu",
+          "label": "Bozu",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "Care",
+          "label": "Care",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "Celestial Seasonings",
+          "label": "Celestial Seasonings",
+          "count": 5,
+          "display": true
+        },
+        {
+          "id": "ChariTea",
+          "label": "ChariTea",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "Clipper",
+          "label": "Clipper",
+          "count": 16,
+          "display": true
+        },
+        {
+          "id": "Dove",
+          "label": "Dove",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "Etos",
+          "label": "Etos",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Fuze Tea",
+          "label": "Fuze Tea",
+          "count": 27,
+          "display": true
+        },
+        {
+          "id": "Glorix",
+          "label": "Glorix",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Karvan Cévitam",
+          "label": "Karvan Cévitam",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Lipton",
+          "label": "Lipton",
+          "count": 49,
+          "display": true
+        },
+        {
+          "id": "Lux",
+          "label": "Lux",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Nestea",
+          "label": "Nestea",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "Pickwick",
+          "label": "Pickwick",
+          "count": 19,
+          "display": true
+        },
+        {
+          "id": "The Gutsy Captain",
+          "label": "The Gutsy Captain",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "Thursday Plantation",
+          "label": "Thursday Plantation",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Trésor Chinois",
+          "label": "Trésor Chinois",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "Uggo",
+          "label": "Uggo",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "Zonnatura",
+          "label": "Zonnatura",
+          "count": 1,
+          "display": true
+        }
+      ],
+      "type": "BRAND",
+      "booleanFilter": false
+    },
+    {
+      "id": "taxonomy",
+      "label": "Soort",
+      "options": [
+        {
+          "id": "6421",
+          "label": "Deodorant",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "11676",
+          "label": "Deodorant vrouwen",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "1465",
+          "label": "Deoroller vrouwen",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "1585",
+          "label": "Deospray vrouwen",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "1964",
+          "label": "Douche",
+          "count": 4,
+          "display": true
+        },
+        {
+          "id": "11541",
+          "label": "Douche olie",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "4858",
+          "label": "Douchegel",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "1965",
+          "label": "Douchegel alle huidtypes",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "4208",
+          "label": "Doucheschuim",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "1083",
+          "label": "Frisdrank",
+          "count": 107,
+          "display": true
+        },
+        {
+          "id": "8316",
+          "label": "Frisse fruitdrank",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "2395",
+          "label": "Frisse fruitdrank (pakken)",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "2124",
+          "label": "Groene thee",
+          "count": 21,
+          "display": true
+        },
+        {
+          "id": "11524",
+          "label": "Handverzorging",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "5779",
+          "label": "Handzeep",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "18019",
+          "label": "Hard seltzer",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "4293",
+          "label": "Huid",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "1512",
+          "label": "IJskoffie",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "4124",
+          "label": "Ice tea",
+          "count": 107,
+          "display": true
+        },
+        {
+          "id": "1174",
+          "label": "Ice tea koolzuurhoudend",
+          "count": 20,
+          "display": true
+        },
+        {
+          "id": "8909",
+          "label": "Ice tea koolzuurvrij",
+          "count": 87,
+          "display": true
+        },
+        {
+          "id": "8910",
+          "label": "Ice tea koolzuurvrij (blikjes)",
+          "count": 14,
+          "display": true
+        },
+        {
+          "id": "8314",
+          "label": "Ice tea koolzuurvrij (drinkpakjes)",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "11389",
+          "label": "Ice tea koolzuurvrij (flessen)",
+          "count": 45,
+          "display": true
+        },
+        {
+          "id": "4125",
+          "label": "Ice tea koolzuurvrij (pakken)",
+          "count": 25,
+          "display": true
+        },
+        {
+          "id": "2763",
+          "label": "Koffie",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "5113",
+          "label": "Kruidenthee",
+          "count": 9,
+          "display": true
+        },
+        {
+          "id": "2126",
+          "label": "Kruidenthee eenkops",
+          "count": 9,
+          "display": true
+        },
+        {
+          "id": "11540",
+          "label": "Lichaamsverzorging",
+          "count": 4,
+          "display": true
+        },
+        {
+          "id": "1523",
+          "label": "Limonadesiroop",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "2125",
+          "label": "Losse thee",
+          "count": 4,
+          "display": true
+        },
+        {
+          "id": "1319",
+          "label": "Melk",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "10170",
+          "label": "Melk (drinkpakjes)",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "18401",
+          "label": "Mixdranken en seltzers",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "8304",
+          "label": "Pakjes drinken",
+          "count": 4,
+          "display": true
+        },
+        {
+          "id": "4130",
+          "label": "Rooibosthee",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "2223",
+          "label": "Siroop",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "2120",
+          "label": "Thee",
+          "count": 55,
+          "display": true
+        },
+        {
+          "id": "1997",
+          "label": "Toiletblokken - vloeibaar",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "1994",
+          "label": "Toiletreinigers & verfrissers",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "11716",
+          "label": "Verzorging",
+          "count": 7,
+          "display": true
+        },
+        {
+          "id": "1966",
+          "label": "Vloeibare zeep",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "1677",
+          "label": "Vruchtensappen & drank",
+          "count": 3,
+          "display": true
+        },
+        {
+          "id": "2122",
+          "label": "Vruchtenthee",
+          "count": 12,
+          "display": true
+        },
+        {
+          "id": "2129",
+          "label": "Witte thee",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "2361",
+          "label": "Zelfzorg",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "18281",
+          "label": "Zuivel drinkpakjes",
+          "count": 1,
+          "display": true
+        },
+        {
+          "id": "17859",
+          "label": "Zuivel tussendoortjes (voor thuis en onderweg)",
+          "count": 2,
+          "display": true
+        },
+        {
+          "id": "5158",
+          "label": "Zwarte thee",
+          "count": 7,
+          "display": true
+        },
+        {
+          "id": "2128",
+          "label": "Zwarte thee eenkops",
+          "count": 5,
+          "display": true
+        },
+        {
+          "id": "2123",
+          "label": "Zwarte thee meerkops",
+          "count": 2,
+          "display": true
+        }
+      ],
+      "type": "TAXONOMY",
+      "booleanFilter": false
+    },
+    {
+      "id": "intolerance",
+      "label": "Allergie",
+      "options": [
+        {
+          "id": "sp_include_intolerance_geen_eieren",
+          "label": "eieren",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_gluten",
+          "label": "gluten",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_lactose",
+          "label": "lactose",
+          "count": 156,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_lupine",
+          "label": "lupine",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_melk",
+          "label": "melk",
+          "count": 156,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_mosterd",
+          "label": "mosterd",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_noten",
+          "label": "noten",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_pindas",
+          "label": "pinda's",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_schelpdieren",
+          "label": "schelpdieren",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_selderij",
+          "label": "selderij",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_sesam",
+          "label": "sesam",
+          "count": 159,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_soja",
+          "label": "soja",
+          "count": 157,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_sulfiet",
+          "label": "sulfiet",
+          "count": 145,
+          "display": true
+        },
+        {
+          "id": "sp_include_intolerance_geen_vis",
+          "label": "vis",
+          "count": 159,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": false
+    },
+    {
+      "id": "diet",
+      "label": "Dieet",
+      "options": [
+        {
+          "id": "sp_include_dieet_halal",
+          "label": "Halal",
+          "count": 5,
+          "display": true
+        },
+        {
+          "id": "sp_include_dieet_laag_suiker",
+          "label": "Laag suiker",
+          "count": 52,
+          "display": true
+        },
+        {
+          "id": "sp_include_dieet_laag_vet",
+          "label": "Laag vet",
+          "count": 116,
+          "display": true
+        },
+        {
+          "id": "sp_include_dieet_laag_zout",
+          "label": "Laag zout",
+          "count": 111,
+          "display": true
+        },
+        {
+          "id": "sp_include_dieet_veganistisch",
+          "label": "Veganistisch",
+          "count": 141,
+          "display": true
+        },
+        {
+          "id": "sp_include_dieet_vegetarisch",
+          "label": "Vegetarisch",
+          "count": 154,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": false
+    },
+    {
+      "id": "nutriscore",
+      "label": "Nutri-Score",
+      "options": [
+        {
+          "id": "b",
+          "label": "Score B",
+          "count": 9,
+          "display": true
+        },
+        {
+          "id": "c",
+          "label": "Score C",
+          "count": 8,
+          "display": true
+        },
+        {
+          "id": "d",
+          "label": "Score D",
+          "count": 3,
+          "display": true
+        }
+      ],
+      "type": "NUTRISCORE",
+      "booleanFilter": false
+    },
+    {
+      "id": "bonus",
+      "label": "Bonus",
+      "options": [
+        {
+          "id": "Bonus",
+          "label": "Bonus",
+          "count": 20,
+          "display": true
+        }
+      ],
+      "type": "BONUS",
+      "booleanFilter": true
+    },
+    {
+      "id": "sp_include_dieet_vegetarisch",
+      "label": "Vegetarisch",
+      "options": [
+        {
+          "id": "sp_include_dieet_vegetarisch",
+          "label": "Vegetarisch",
+          "count": 154,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": true
+    },
+    {
+      "id": "sp_include_dieet_veganistisch",
+      "label": "Veganistisch",
+      "options": [
+        {
+          "id": "sp_include_dieet_veganistisch",
+          "label": "Veganistisch",
+          "count": 141,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": true
+    },
+    {
+      "id": "np_biologisch",
+      "label": "Biologisch",
+      "options": [
+        {
+          "id": "np_biologisch",
+          "label": "Biologisch",
+          "count": 30,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": true
+    },
+    {
+      "id": "np_goedkoopje",
+      "label": "Prijsfavoriet",
+      "options": [
+        {
+          "id": "np_goedkoopje",
+          "label": "Prijsfavoriet",
+          "count": 3,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": true
+    },
+    {
+      "id": "np_voordeel",
+      "label": "Voordeelpakken",
+      "options": [
+        {
+          "id": "np_voordeel",
+          "label": "Voordeelpakken",
+          "count": 3,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": true
+    },
+    {
+      "id": "np_nieuw",
+      "label": "Nieuw",
+      "options": [
+        {
+          "id": "np_nieuw",
+          "label": "Nieuw",
+          "count": 2,
+          "display": true
+        }
+      ],
+      "type": "PROPERTY",
+      "booleanFilter": true
+    }
+  ],
+  "sortOn": [
+    "RELEVANCE",
+    "PRICEHIGHLOW",
+    "PRICELOWHIGH",
+    "TAXONOMY",
+    "PURCHASE_FREQUENCY",
+    "PURCHASE_DATE",
+    "PURCHASE_DEPARTMENT",
+    "NUTRISCORE"
+  ],
+  "configuration": {
+    "googleBanners": {
+      "adUnitMainPath": "REMOVED",
+      "adUnitSecondaryPath": "REMOVED",
+      "customTemplateId": "REMOVED",
+      "divGptAd": "REMOVED"
+    }
+  },
+  "ads": [],
+  "taxonomyNodes": []
+}
