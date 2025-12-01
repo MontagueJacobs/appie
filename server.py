@@ -77,6 +77,10 @@ async def refresh_token_if_needed() -> str:
             headers={
                 "User-Agent": AH_USER_AGENT,
                 "Content-Type": "application/json",
+                "Accept": "application/json",
+                # Some recent upstream changes appear to require explicit client/device headers.
+                "X-Client-Id": AH_CLIENT_ID,
+                "X-Device-Id": DEVICE_ID,
             },
         )
     if resp.status_code != 200:
@@ -101,6 +105,9 @@ async def exchange_code_for_token(code: str) -> Dict:
             headers={
                 "User-Agent": AH_USER_AGENT,
                 "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-Client-Id": AH_CLIENT_ID,
+                "X-Device-Id": DEVICE_ID,
             },
         )
     if resp.status_code != 200:
@@ -116,7 +123,52 @@ async def exchange_code_for_token(code: str) -> Dict:
 
 @app.post("/api/login")
 async def api_login(code: str = Form(...)):
-    tokens = await exchange_code_for_token(code)
+    """Login using an authorization code.
+
+    The frontend may submit either:
+      1. The raw code value (e.g. "abcd1234")
+      2. The full redirect URL (e.g. "appie://login-exit?code=abcd1234&state=...")
+
+    We normalize the input to just the code, then exchange it.
+    Adds extra diagnostics to help track recent login failures and includes
+    optional mobile headers if AH started requiring them for token exchange.
+    """
+
+    raw = code.strip()
+    # URL decode if user pasted percent-encoded link / fragment
+    try:
+        from urllib.parse import unquote
+        raw = unquote(raw)
+    except Exception:
+        pass
+    # Attempt to extract code if a full URL / fragment was pasted.
+    if "code=" in raw:
+        try:
+            # Split on first occurrence of code= then trim at next & if present.
+            raw_fragment = raw.split("code=", 1)[1]
+            raw = raw_fragment.split("&", 1)[0]
+        except Exception:
+            # Keep original raw if parsing fails; will likely 400 downstream.
+            pass
+
+    # Basic sanity check — AH codes historically > 20 chars; warn if very short.
+    if len(raw) < 6:  # heuristic threshold
+        return JSONResponse({
+            "status": "error",
+            "detail": "Authorization code appears too short; make sure you copied the full value after code=.",
+            "submitted": code,
+        }, status_code=400)
+
+    try:
+        tokens = await exchange_code_for_token(raw)
+    except HTTPException as e:
+        # Surface upstream body for easier debugging.
+        return JSONResponse({
+            "status": "error",
+            "detail": str(e.detail),
+            "hint": "If this keeps failing, re-open the authorize URL and obtain a fresh code. The OAuth flow may now require a one-time PKCE verifier or additional headers.",
+            "submitted_code_length": len(raw),
+        }, status_code=e.status_code)
     return {"status": "ok", "expires_in": tokens.get("expires_in", 0)}
 
 
