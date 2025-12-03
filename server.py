@@ -9,6 +9,7 @@ import uuid
 from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi import Body
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
@@ -339,8 +340,11 @@ async def ah_get(path: str, params: Optional[Dict] = None, request: Optional[Req
             last_resp = await client.get(f"{AH_BASE}{path}", params=params, headers=headers)
             if last_resp.status_code != 503:
                 return last_resp
-            # backoff before retry
-            await asyncio.sleep(0.5 * (2 ** attempt))
+            # backoff before retry with slight jitter to look less bot-like
+            base = 0.5 * (2 ** attempt)
+            jitter = 0.2 * base
+            import random
+            await asyncio.sleep(base + random.uniform(-jitter, jitter))
 
         # If still 503 and initial path is v1, try v2 variant once.
         if path == "/mobile-services/v1/receipts":
@@ -516,6 +520,70 @@ async def serve_styles():
     if not css_path.exists():
         raise HTTPException(status_code=404, detail="styles.css not found")
     return FileResponse(str(css_path), media_type="text/css")
+
+# ----------------------------
+# Diagnostics & Device helpers
+# ----------------------------
+
+@app.get("/api/device-id")
+async def api_get_device_id(request: Request):
+    did = request.cookies.get(DEVICE_ID_COOKIE) or _determine_device_id(request)
+    return {"device_id": did}
+
+@app.post("/api/device-id")
+async def api_set_device_id(request: Request, device_id: str = Form(None)):
+    # Allow JSON body too
+    if device_id is None:
+        try:
+            payload = await request.json()
+            device_id = (payload or {}).get("device_id")
+        except Exception:
+            device_id = None
+    if not device_id or not isinstance(device_id, str) or len(device_id) < 8:
+        raise HTTPException(status_code=400, detail="Invalid device_id")
+    # Set cookie so subsequent requests use this device id
+    resp = JSONResponse({"status": "ok", "device_id": device_id})
+    resp.set_cookie(
+        key=DEVICE_ID_COOKIE,
+        value=device_id,
+        max_age=60*60*24*365,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return resp
+
+@app.get("/api/debug/headers")
+async def api_debug_headers(request: Request):
+    # Show headers we would send to AH for visibility
+    access_token = None
+    try:
+        tokens = load_tokens(request)
+        access_token = tokens.get("access_token") if tokens else None
+    except Exception:
+        pass
+    device_id = request.cookies.get(DEVICE_ID_COOKIE) or _determine_device_id(request)
+    headers = {
+        "User-Agent": f"{AH_USER_AGENT} (Android; 14; Sandbox)",
+        "Authorization": f"Bearer {access_token or '…'}",
+        "Accept": "application/json",
+        "Accept-Language": "nl-NL,nl;q=0.8,en-US;q=0.6,en;q=0.4",
+        "Accept-Encoding": "gzip, deflate",
+        "X-App-Version": AH_USER_AGENT.split("/")[-1],
+        "X-App-Build": AH_USER_AGENT.split("/")[-1].replace(".", ""),
+        "X-App-Name": "ah",
+        "X-Channel": "mobile",
+        "X-Client-Id": AH_CLIENT_ID,
+        "X-Device-Platform": "android",
+        "X-Device-Type": "phone",
+        "X-OS-Version": "14",
+        "X-Device-Id": device_id,
+        "X-Device-Model": "Pixel 7 Sandbox",
+        "X-Network-Type": "wifi",
+        "X-Platform": "android",
+        "X-Correlation-ID": str(uuid.uuid4()),
+    }
+    return {"headers": headers}
 
 
 # Optional: mount static files (CSS/JS/images) if you want direct access without the root handler.
