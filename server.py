@@ -11,6 +11,9 @@ from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi import Body
 from fastapi.staticfiles import StaticFiles
+import base64
+import hashlib
+import secrets
 
 app = FastAPI()
 
@@ -143,9 +146,13 @@ async def refresh_token_if_needed(request: Request) -> str:
 
 async def exchange_code_for_token(code: str, request: Request) -> Dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
+        payload = {"clientId": AH_CLIENT_ID, "code": code}
+        pkce_verifier = request.cookies.get("pkce_v")
+        if pkce_verifier:
+            payload["codeVerifier"] = pkce_verifier
         resp = await client.post(
             f"{AH_BASE}/mobile-auth/v1/auth/token",
-            json={"clientId": AH_CLIENT_ID, "code": code},
+            json=payload,
             headers={
                 "User-Agent": AH_USER_AGENT,
                 "Content-Type": "application/json",
@@ -166,7 +173,7 @@ async def exchange_code_for_token(code: str, request: Request) -> Dict:
 
 
 @app.post("/api/login")
-async def api_login(request: Request, code: str = Form(...)):
+async def api_login(request: Request, code: str = Form(...), state: str = Form(None)):
     """Login using an authorization code.
 
     The frontend may submit either:
@@ -203,6 +210,11 @@ async def api_login(request: Request, code: str = Form(...)):
             "submitted": code,
         }, status_code=400)
 
+    # Validate state if provided (for web callback)
+    cookie_state = request.cookies.get("oauth_state")
+    if state is not None and cookie_state and state != cookie_state:
+        return JSONResponse({"status": "error", "detail": "State mismatch"}, status_code=400)
+
     try:
         tokens = await exchange_code_for_token(raw, request)
     except HTTPException as e:
@@ -233,6 +245,9 @@ async def api_login(request: Request, code: str = Form(...)):
         secure=True,
         samesite="lax",
     )
+    # Clear oauth cookies post-success
+    response.delete_cookie("oauth_state")
+    response.delete_cookie("pkce_v")
     return response
 
 
@@ -295,13 +310,26 @@ async def api_authorize_url(request: Request):
     # Fallback to legacy mobile scheme if neither env nor host is available
     fallback = "appie://login-exit"
     callback = env_redirect or derived or fallback
+
+    # Generate state and PKCE
+    state = base64.urlsafe_b64encode(os.urandom(16)).decode().rstrip("=")
+    code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(48)).decode().rstrip("=")
+    code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest()).decode().rstrip("=")
+
     url = (
         "https://login.ah.nl/secure/oauth/authorize"
         "?client_id=appie"
         f"&redirect_uri={callback}"
         "&response_type=code"
+        f"&state={state}"
+        f"&code_challenge={code_challenge}"
+        "&code_challenge_method=S256"
     )
-    return {"authorize_url": url, "url": url, "redirect_uri": callback}
+
+    resp = JSONResponse({"authorize_url": url, "url": url, "redirect_uri": callback, "state": state})
+    resp.set_cookie("oauth_state", state, httponly=True, secure=True, samesite="lax", max_age=600)
+    resp.set_cookie("pkce_v", code_verifier, httponly=True, secure=True, samesite="lax", max_age=600)
+    return resp
 
 
 async def ah_get(path: str, params: Optional[Dict] = None, request: Optional[Request] = None) -> httpx.Response:
@@ -324,7 +352,7 @@ async def ah_get(path: str, params: Optional[Dict] = None, request: Optional[Req
         "X-Device-Platform": "android",
         "X-Device-Type": "phone",
         "X-OS-Version": "14",
-        "X-Device-Id": DEVICE_ID,
+    "X-Device-Id": _determine_device_id(request),
         "X-Device-Model": "Pixel 7 Sandbox",
         "X-Network-Type": "wifi",
         "X-Platform": "android",
@@ -472,7 +500,12 @@ async def root():
 
 # Minimal callback page: exchanges ?code= via backend and then redirects to home.
 @app.get("/login-callback")
-async def login_callback_page():
+async def login_callback_page(request: Request):
+        # Verify state if present
+        st = request.query_params.get("state")
+        cookie_state = request.cookies.get("oauth_state")
+        if cookie_state and st and st != cookie_state:
+            return HTMLResponse("<p>Login error: state mismatch.</p>", status_code=400)
         html = """
         <!DOCTYPE html>
         <html>
@@ -483,12 +516,14 @@ async def login_callback_page():
             try {
                 const params = new URLSearchParams(window.location.search);
                 const code = params.get('code');
+                const state = params.get('state');
                 if (!code) {
                     document.body.innerHTML = '<p>Missing code parameter.</p>';
                     return;
                 }
                 const fd = new FormData();
                 fd.append('code', code);
+                if (state) fd.append('state', state);
                 const resp = await fetch('/api/login', { method: 'POST', body: fd });
                 if (resp.ok) {
                     // Go back to main page
