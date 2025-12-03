@@ -311,7 +311,19 @@ async def api_authorize_url(request: Request):
     fallback = "appie://login-exit"
     callback = env_redirect or derived or fallback
 
-    # Generate state and PKCE
+    # Compatibility mode: when "compat=1" is provided, don't include state/PKCE.
+    compat = request.query_params.get("compat") in ("1", "true", "yes")
+
+    if compat:
+        url = (
+            "https://login.ah.nl/secure/oauth/authorize"
+            "?client_id=appie"
+            f"&redirect_uri={callback}"
+            "&response_type=code"
+        )
+        return {"authorize_url": url, "url": url, "redirect_uri": callback, "mode": "compat"}
+
+    # Default: generate state and PKCE (recommended)
     state = base64.urlsafe_b64encode(os.urandom(16)).decode().rstrip("=")
     code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(48)).decode().rstrip("=")
     code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest()).decode().rstrip("=")
@@ -326,7 +338,7 @@ async def api_authorize_url(request: Request):
         "&code_challenge_method=S256"
     )
 
-    resp = JSONResponse({"authorize_url": url, "url": url, "redirect_uri": callback, "state": state})
+    resp = JSONResponse({"authorize_url": url, "url": url, "redirect_uri": callback, "state": state, "mode": "pkce"})
     resp.set_cookie("oauth_state", state, httponly=True, secure=True, samesite="lax", max_age=600)
     resp.set_cookie("pkce_v", code_verifier, httponly=True, secure=True, samesite="lax", max_age=600)
     return resp
