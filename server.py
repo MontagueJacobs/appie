@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 import base64
 import hashlib
 import secrets
+from urllib.parse import urlencode
 
 app = FastAPI()
 
@@ -306,6 +307,9 @@ async def api_authorize_url(request: Request):
     env_redirect = os.environ.get("REDIRECT_URI")
     host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
     scheme = "https"  # Vercel serves over HTTPS
+    # For local dev, default to http to avoid mixed-content issues and allow localhost callback
+    if host.startswith("127.0.0.1") or host.startswith("localhost"):
+        scheme = "http"
     derived = f"{scheme}://{host}/login-callback" if host else None
     # Fallback to legacy mobile scheme if neither env nor host is available
     fallback = "appie://login-exit"
@@ -342,6 +346,67 @@ async def api_authorize_url(request: Request):
     resp.set_cookie("oauth_state", state, httponly=True, secure=True, samesite="lax", max_age=600)
     resp.set_cookie("pkce_v", code_verifier, httponly=True, secure=True, samesite="lax", max_age=600)
     return resp
+
+
+@app.get("/login-callback")
+async def login_callback(request: Request):
+        """Browser callback endpoint. If the IdP redirects here with `code` and optional `state`,
+        render a tiny HTML page that auto-posts the code to `/api/login` and then redirects to `/`.
+
+        This avoids the need for handling a custom URI scheme on desktop browsers.
+        """
+        params = request.query_params
+        code = params.get("code")
+        state = params.get("state")
+
+        if not code:
+                # Show a helpful page explaining what to do if no code is present
+                html = f"""
+                <html>
+                <head><meta charset='utf-8'><title>Appie Login</title></head>
+                <body style='font-family: system-ui, sans-serif; padding: 24px;'>
+                    <h2>Login callback</h2>
+                    <p>No authorization code was present in the URL. If you just logged in, please try again using the Login button in the app so the identity provider can redirect back here.</p>
+                    <p><a href='/'>Return to the app</a></p>
+                </body>
+                </html>
+                """
+                return HTMLResponse(content=html, status_code=400)
+
+        # Render auto-submitting page
+        # State is included if available to let the backend validate cookie state
+        # Build HTML safely without f-string curly conflicts
+        code_json = json.dumps(code)
+        state_line = ""
+        if state:
+                state_line = "fd.append('state', " + json.dumps(state) + ");"
+        html = (
+                "<html>"
+                "<head><meta charset='utf-8'><title>Completing login…</title></head>"
+                "<body style='font-family: system-ui, sans-serif; padding: 24px;'>"
+                "  <p>Completing login…</p>"
+                "  <script>"
+                "    (async () => {"
+                "      try {"
+                "        const fd = new FormData();"
+                "        fd.append('code', " + code_json + ");"
+                "        " + state_line + ""
+                "        const resp = await fetch('/api/login', { method: 'POST', body: fd });"
+                "        if (resp.ok) {"
+                "          window.location.href = '/';"
+                "        } else {"
+                "          const err = await resp.json().catch(() => ({detail:'Login failed'}));"
+                "          document.body.innerHTML = '<h2>Login failed</h2><pre>' + JSON.stringify(err, null, 2) + '</pre><p><a href=\'/\'>Back to app</a></p>';"
+                "        }"
+                "      } catch (e) {"
+                "        document.body.innerHTML = '<h2>Error</h2><pre>' + String(e) + '</pre><p><a href=\'/\'>Back to app</a></p>';"
+                "      }"
+                "    })();"
+                "  </script>"
+                "</body>"
+                "</html>"
+        )
+        return HTMLResponse(content=html)
 
 
 async def ah_get(path: str, params: Optional[Dict] = None, request: Optional[Request] = None) -> httpx.Response:

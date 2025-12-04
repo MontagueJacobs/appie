@@ -258,6 +258,7 @@ async function checkLoginStatus() {
 // Get authorization URL
 async function getAuthUrl() {
     try {
+        // Prefer PKCE flow with browser callback; backend will derive redirect to /login-callback
         const response = await fetch('/api/authorize-url');
         if (!response.ok) {
             const text = await response.text();
@@ -340,7 +341,7 @@ document.getElementById('auto-detect-btn')?.addEventListener('click', async func
         
         // Check if it looks like the redirect URL
         if (!clipboardText.includes('code=')) {
-            showError('The clipboard doesn\'t contain a valid authorization URL. Please copy the appie://login-exit?code=... URL.');
+            showError('The clipboard does not contain a code yet. Please use the Login button so the browser can redirect back here automatically, or copy the final URL that contains "?code=...".');
             return;
         }
         
@@ -407,7 +408,7 @@ document.getElementById('login-form')?.addEventListener('submit', async function
     const urlInput = document.getElementById('auth-url').value.trim();
     
     if (!urlInput) {
-        showError('Please paste the authorization code or URL');
+        showError('Please paste the authorization code or use the Login button to auto-complete.');
         return;
     }
     
@@ -420,9 +421,14 @@ document.getElementById('login-form')?.addEventListener('submit', async function
         } else if (urlInput.includes('code=')) {
             code = urlInput.split('code=')[1].split('&')[0];
         } else if (urlInput.includes('://')) {
-            // It's a URL but no code found
-            showError('Could not find code in the URL. Please make sure the URL contains "?code=..."');
-            return;
+            // If it's an AH login URL without code, guide user to click the login button
+            if (urlInput.includes('login.ah.nl')) {
+                showError('This is the login page URL. Click the Login button and complete authentication to be redirected here automatically.');
+                return;
+            } else {
+                showError('Could not find code in the URL. Please make sure the URL contains "?code=..."');
+                return;
+            }
         } else {
             // Assume they pasted just the code directly
             code = urlInput;
