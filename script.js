@@ -256,10 +256,11 @@ async function checkLoginStatus() {
 }
 
 // Get authorization URL
-async function getAuthUrl() {
+async function getAuthUrl(forceCompat = false) {
     try {
-        // Prefer PKCE flow with browser callback; backend will derive redirect to /login-callback
-        const response = await fetch('/api/authorize-url');
+        // On production, prefer PKCE + HTTPS callback; on localhost, compat can be used
+        const compatParam = forceCompat ? '?compat=1' : '';
+        const response = await fetch('/api/authorize-url' + compatParam, { cache: 'no-store' });
         if (!response.ok) {
             const text = await response.text();
             console.error('Failed to fetch /api/authorize-url:', response.status, text.substring(0, 500));
@@ -278,25 +279,13 @@ async function getAuthUrl() {
 // Open authorization URL in new tab
 document.getElementById('open-auth-btn')?.addEventListener('click', async function() {
     console.log('Login button clicked');
-    // Make sure we have an authUrl; if not, fetch it on demand to avoid race conditions
+    // Always fetch a fresh authorize URL to respect env/host changes
     try {
-        let win = null;
+        let win = window.open('', '_blank', 'width=800,height=600');
+        try { if (win) { win.document.write('<p style="font-family: sans-serif; padding:20px;">Preparing login... please wait.</p>'); } } catch (e) {}
 
-        if (!authUrl) {
-            // Open a blank window synchronously to preserve the user gesture (avoid popup blocker)
-            win = window.open('', '_blank', 'width=800,height=600');
-            // Inform user in the new window while we fetch
-            try {
-                if (win) {
-                    win.document.write('<p style="font-family: sans-serif; padding:20px;">Preparing login... please wait.</p>');
-                }
-            } catch (e) {
-                // Ignore cross-origin write failures
-            }
-
-            console.log('No cached authorize URL, fetching...');
-            await getAuthUrl();
-        }
+        const isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+        await getAuthUrl(isLocal); // use compat on localhost, pkce on prod
 
         if (authUrl) {
             // If we opened a blank window earlier, navigate it; otherwise open a new one
